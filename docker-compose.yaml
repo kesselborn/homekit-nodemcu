@@ -1,0 +1,7 @@
+---
+version: '3'
+services:
+  sdk:
+    build: .
+    volumes:
+      - .:/host

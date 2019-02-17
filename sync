@@ -1,0 +1,2 @@
+#!/bin/bash
+find esp-open-rtos/bootloader/firmware_prebuilt/ esp-homekit-demo/ -name "*.bin" -exec cp {} /host \;
