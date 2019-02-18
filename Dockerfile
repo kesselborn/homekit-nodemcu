@@ -30,7 +30,4 @@ WORKDIR /home/nodemcu/esp-homekit-demo
 COPY wifi.h .
 RUN for d in examples/*; do make -C $d all; done
 
-WORKDIR /home/nodemcu
-RUN mkdir bin
-ENV PATH="/home/nodemcu/bin:$PATH"
-COPY sync ./bin
+WORKDIR /host

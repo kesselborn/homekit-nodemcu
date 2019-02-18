@@ -16,6 +16,11 @@ This is a repo with a docker build container for building the [nodemcu homekit d
 
   This will take ages at the first run ... it'll compile all examples
 
+- copy the prebuilt firmwares to the host system
+
+      cp /home/nodemcu/esp-open-rtos/bootloader/firmware_prebuilt/*.bin /host
+  
+
   
 
 ## Use build container
@@ -23,14 +28,13 @@ This is a repo with a docker build container for building the [nodemcu homekit d
 Within the build container, you can (re-)compile all examples as explained at
 https://github.com/maximkulkin/esp-homekit-demo#usage (Point 7)
 
+Within the `/host` directory, build the led sample  but changing into the docker container and building the binary:
 
-
-After building, call `sync` in the container which will copy all binaries to the current directory on the host.
-
-
+    docker-compose run sdk
+    make -C firmware/led all
 
 ## Flashing binary to nodemcu
 
-Flash the nodemcu with your bin file (here: led.bin) by calling
+On the host system (i.e. not in the docker container) flash the binary like this:
 
-    BIN=led.bin make flash
+    BIN=firmware/led/firmwareled.bin make flash
