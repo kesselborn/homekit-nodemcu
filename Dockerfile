@@ -29,5 +29,5 @@ ENV SDK_PATH=/home/nodemcu/esp-open-rtos
 WORKDIR /home/nodemcu/esp-homekit-demo
 COPY wifi.h .
 RUN for d in examples/*; do make -C $d all; done
-
+ENV HOMEKIT_DEMOS_PATH="/home/nodemcu/esp-homekit-demo"
 WORKDIR /host
