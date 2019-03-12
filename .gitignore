@@ -1,3 +1,4 @@
 /*.bin
+/*.bin.sig
 /contrib-firmwares
 /firmware/*/*/*.bin

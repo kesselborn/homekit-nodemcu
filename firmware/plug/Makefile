@@ -1,4 +1,4 @@
-PROGRAM = kesselPLUG
+PROGRAM = plug
 
 EXTRA_COMPONENTS = \
 	extras/http-parser \

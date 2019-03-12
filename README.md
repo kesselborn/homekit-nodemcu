@@ -1,3 +1,5 @@
+** this readme is out of date**
+
 # Building esp homekit demos on mac os x
 
 This is a repo with a docker build container for building the [nodemcu homekit demo apps](https://github.com/maximkulkin/esp-homekit-demo). Installing the cross compiling tool chain on macos is a pain, therefore this work around.

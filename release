@@ -1,0 +1,55 @@
+#!/bin/bash -e
+test -n "${1:?echo usage: $0 <name>-<version>.bin}"
+test -n "${GITHUB_TOKEN:?please set GITHUB_TOKEN env var}"
+
+VERSION=$(echo $1|grep -Eo "[0-9]+\.[0-9]+\.[0-9]+") || { echo "$1 does not match the filename pattern <name>-<version>.bin"; exit 1; }
+LOCAL_ASSET=$(echo $1 |sed -E 's/-[0-9]+\.[0-9]+\.[0-9]+.bin/.bin/g')
+
+cp $1 ${LOCAL_ASSET}
+
+# commit version bumps and create new tag
+git tag ${VERSION}
+
+{ git push --tags && git push; } || true
+
+################ github release upload
+AUTH="Authorization: token ${GITHUB_TOKEN:?please set GITHUB_TOKEN env var}"
+VERSION=${VERSION}
+
+repo=$(git remote get-url origin|cut -d: -f2|sed 's/\.git$//g')
+
+release_notes_file=$(mktemp /tmp/release_notes.XXXXXX)
+echo -e "release notes for github:\n$(git log --format=%B -n 1 HEAD^1)\n\n$(git log --format=%B -n 1 HEAD)" > ${release_notes_file}
+vi ${release_notes_file} || true
+(set -x; cat release_notes_file|pbcopy)
+release_notes=$(cat ${release_notes_file} | while read l; do echo -n "$l\\n"; done)
+release_body="{\"tag_name\":\"${VERSION}\",\"name\":\"${VERSION}\",\"body\":\"${release_notes}\",\"draft\":false,\"prerelease\":false}"
+rm -f ${release_notes_file}
+
+response=$(set -x; curl -ifL -H"Accept: application/vnd.github.v3+json" -H"${AUTH}" -XPOST -d "${release_body}" https://api.github.com/repos/${repo}/releases) \
+  || { echo "Error: does the release already exist? Check https://github.com/${repo}/releases/tag/${VERSION}"; exit 1; }
+
+upload_url=$(echo ${response}|sed -E 's/.*"upload_url": "([^"]+)".*/\1/g'|cut -d{ -f1)
+
+echo "Uploading asset... $LOCAL_ASSET" >&2
+curl -L# --data-binary @"${LOCAL_ASSET}" \
+         -H "Content-Type: application/x-xpinstall" \
+         -H"Accept: application/vnd.github.v3+json" -H"${AUTH}" \
+         -XPOST ${upload_url}?name=$(basename $LOCAL_ASSET)
+
+openssl sha384 -binary -out ${LOCAL_ASSET}.sig ${LOCAL_ASSET}
+printf "%08x" $(cat ${LOCAL_ASSET} | wc -c)| xxd -r -p >> ${LOCAL_ASSET}.sig
+
+echo "Uploading asset... ${LOCAL_ASSET}.sig" >&2
+curl -L# --data-binary @"${LOCAL_ASSET}.sig" \
+         -H "Content-Type: application/x-xpinstall" \
+         -H"Accept: application/vnd.github.v3+json" -H"${AUTH}" \
+         -XPOST ${upload_url}?name=$(basename ${LOCAL_ASSET}.sig)
+
+  cat<<EOF
+
+
+  Successfully created release -- edit edit release notes at: https://github.com/${repo}/releases/edit/${VERSION}
+
+
+EOF

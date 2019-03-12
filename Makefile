@@ -18,5 +18,8 @@ flash-nodemcu::
 	while ! esptool.py -p ${PORT} --baud 115200 write_flash -fs 32m -fm qio -ff 40m 0x0 rboot.bin 0x1000 blank_config.bin 0x2000 $${BIN:?set \$$BIN variable to the binary you want to flash};  do echo "trying flashing again ..."; (set +x; sleep 2); done
 
 build-fake-plug:
-	EXTRA_CFLAGS="-DFAKE_PLUG -DVERSION=$${VERSION:?set VERSION}" make -j6 -C firmware/kesselPLUG
-	cp firmware/kesselPLUG/firmware/kesselPLUG.bin kesselplug-${VERSION}.bin
+	EXTRA_CFLAGS="-DFAKE_PLUG -DVERSION=$${VERSION:?set VERSION}" make -j6 -C firmware/plug
+	cp firmware/plug/firmware/plug.bin plug-${VERSION}.bin
+
+clean:
+	mv *.bin *.bin.sig /tmp
