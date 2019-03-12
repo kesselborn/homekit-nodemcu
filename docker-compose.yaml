@@ -1,7 +1,15 @@
 ---
 version: '3'
 services:
-  sdk:
+  nodemcu-sdk:
     build: .
+    volumes:
+      - .:/host
+  plug-sdk:
+    build: .
+    environment:
+      FLASH_SIZE: 8
+      HOMEKIT_SPI_FLASH_BASE_ADDR: "0x7a000"
+      FLASH_MODE: dout
     volumes:
       - .:/host

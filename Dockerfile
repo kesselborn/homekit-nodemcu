@@ -10,24 +10,29 @@ RUN dpkg-reconfigure -f noninteractive tzdata
 RUN useradd -ms /bin/bash nodemcu
 USER nodemcu
 
-WORKDIR /home/nodemcu
-RUN git clone https://github.com/maximkulkin/esp-homekit-demo.git
-WORKDIR /home/nodemcu/esp-homekit-demo
-RUN git submodule update --init --recursive
+ENV PATH="/home/nodemcu/esp-open-sdk/xtensa-lx106-elf/bin:$PATH" \
+    SDK_PATH=/home/nodemcu/esp-open-rtos \
+    SPI_SIZE=1M \
+    SPI_MODE=dout \
+    SPI_SPEED=40 \
+    HOMEKIT_DEMOS_PATH="/home/nodemcu/esp-homekit-demo" \
+    C_INCLUDE_PATH=/home/nodemcu/esp-open-rtos/include:/home/nodemcu/rboot
 
 WORKDIR /home/nodemcu
-RUN git clone --recursive https://github.com/pfalcon/esp-open-sdk.git
-WORKDIR /home/nodemcu/esp-open-sdk
+RUN git clone --recurse-submodules https://github.com/maximkulkin/esp-homekit-demo.git
+RUN git clone --recurse-submodules https://github.com/pfalcon/esp-open-sdk.git && make -C esp-open-sdk -j6 toolchain esptool libhal STANDALONE=n || true
+RUN git clone --recurse-submodules https://github.com/Superhouse/esp-open-rtos.git
+
 # https://github.com/maximkulkin/esp-homekit-demo#usage
-RUN make toolchain esptool libhal STANDALONE=n
-ENV PATH="/home/nodemcu/esp-open-sdk/xtensa-lx106-elf/bin:$PATH"
+RUN git clone --recurse-submodules https://github.com/raburton/esptool2.git && make -C esptool2 -j6
+RUN git clone --recurse-submodules https://github.com/raburton/rboot.git && C_INCLUDE_PATH=/home/nodemcu/esp-open-rtos/include:/home/nodemcu/rboot:/home/nodemcu/esp-open-rtos/bootloader make -C rboot -j6 all
+RUN git clone --recurse-submodules https://github.com/raburton/rboot-sample.git
+RUN git clone --recurse-submodules https://github.com/HomeACcessoryKid/life-cycle-manager.git
 
-WORKDIR /home/nodemcu
-RUN git clone --recursive https://github.com/Superhouse/esp-open-rtos.git
-ENV SDK_PATH=/home/nodemcu/esp-open-rtos
+COPY wifi.h /home/nodemcu/esp-homekit-demo
+# COPY program1.ld /home/nodemcu/esp-open-rtos/ld/program1.ld
+RUN cat /home/nodemcu/esp-open-rtos/ld/program.ld|sed 's/irom0_0_seg :.*org = 0x40202010, len = (1M - 0x2010)/irom0_0_seg :                               org = 0x4028D010, len = (0xf5000 - 0x2010)/g' > /home/nodemcu/esp-open-rtos/ld/program1.ld
 
-WORKDIR /home/nodemcu/esp-homekit-demo
-COPY wifi.h .
-RUN for d in examples/*; do make -C $d all; done
-ENV HOMEKIT_DEMOS_PATH="/home/nodemcu/esp-homekit-demo"
-WORKDIR /host
+ENV C_INCLUDE_PATH=/home/nodemcu/esp-open-rtos:/home/nodemcu/esp-open-rtos/bootloader/:/home/nodemcu/esp-open-rtos/bootloader/rboot:/home/nodemcu/esp-open-rtos/bootloader/rboot/appcode
+
+CMD ["sh", "-c", "while true; do sleep 3600; done;"]
